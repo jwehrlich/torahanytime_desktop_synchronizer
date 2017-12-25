@@ -30,7 +30,7 @@ end
 class Speaker < Connectable
   attr_reader :id, :name, :image, :lectures
   DEFAULT_OFFSET = 0
-  DEFAULT_LIMIT = 100
+  DEFAULT_LIMIT = 1
 
   def initialize(payload)
     @id = payload['speaker_id']
@@ -85,8 +85,8 @@ class Lecture < Connectable
       puts "Downloading: #{file_name}..."
       url = download_url(user_id)
       download_file(url, file_path)
+      process_mp3_metadata(file_path)
     end
-    process_mp3_metadata(file_path)
   end
 
   def file_name
@@ -94,12 +94,26 @@ class Lecture < Connectable
 
     speaker_name = @speaker.name.downcase.tr(' ', '_')
     title = @name.downcase.tr(' ', '_')
-    times = date.split('/')
-    time = "#{times[2]}-#{times[0]}-#{times[1]}"
-    @file_name = "#{speaker_name}-#{time}-#{title}.mp3"
+    time = "#{date_as_parts[2]}-#{date_as_parts[0]}-#{date_as_parts[1]}"
+    @file_name = "#{speaker_name}-#{time}-#{title}.mp3".gsub(%r{^.*(\\|\/)}, '')
+                                                       .gsub(/[^0-9A-Za-z.\-]/, '_')
   end
 
   private
+
+  def date_as_parts
+    return @parts unless @parts.nil?
+
+    parts = date.split('/')
+    @parts = if parts.count == 3
+      times
+    elsif parts.count == 1
+      parts = date.split('-')
+      [parts[1], parts[2], parts[0]]
+    else
+      []
+    end
+  end
 
   def download_url(user_id)
     url = 'https://www.torahanytime.com/u/download'
@@ -113,7 +127,8 @@ class Lecture < Connectable
   def process_mp3_metadata(file_path)
     puts 'Updating MP3 metadata'
     Mp3Info.open(file_path) do |mp3|
-      mp3.tag.title = @name
+      time = "#{date_as_parts[2]}-#{date_as_parts[0]}-#{date_as_parts[1]}"
+      mp3.tag.title = "(#{time}) #{@name}"
       mp3.tag.artist = @speaker.name
       mp3.tag.album = 'TorahAnytime.com'
       mp3.tag.year = @date.split('/')[2]
