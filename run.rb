@@ -20,6 +20,7 @@ class Connectable
     http.use_ssl = true
     resp = http.get(uri.path)
 
+    FileUtils.mkdir_p File.dirname(file_path)
     open(file_path, 'wb') do |file|
       file.write(resp.body)
     end
@@ -30,7 +31,7 @@ end
 class Speaker < Connectable
   attr_reader :id, :name, :image, :lectures
   DEFAULT_OFFSET = 0
-  DEFAULT_LIMIT = 1
+  DEFAULT_LIMIT = 100
 
   def initialize(payload)
     @id = payload['speaker_id']
@@ -78,7 +79,7 @@ class Lecture < Connectable
 
   def download(user_id, path)
     FileUtils.mkdir_p(path)
-    file_path = "#{path}/#{file_name}"
+    file_path = "#{path}/#{@speaker.name.downcase.tr(' ', '_')}/#{file_name}"
     if File.exist?(file_path)
       puts "Already downloaded file: #{file_name}"
     else
@@ -106,13 +107,13 @@ class Lecture < Connectable
 
     parts = date.split('/')
     @parts = if parts.count == 3
-      times
-    elsif parts.count == 1
-      parts = date.split('-')
-      [parts[1], parts[2], parts[0]]
-    else
-      []
-    end
+               times
+             elsif parts.count == 1
+               parts = date.split('-')
+               [parts[1], parts[2], parts[0]]
+             else
+               []
+             end
   end
 
   def download_url(user_id)
@@ -130,7 +131,7 @@ class Lecture < Connectable
       time = "#{date_as_parts[2]}-#{date_as_parts[0]}-#{date_as_parts[1]}"
       mp3.tag.title = "(#{time}) #{@name}"
       mp3.tag.artist = @speaker.name
-      mp3.tag.album = 'TorahAnytime.com'
+      mp3.tag.album = "TorahAnytime.com - #{@speaker.name}"
       mp3.tag.year = @date.split('/')[2]
       mp3.tag.comments = "Lecture was given on: #{@date}"
       mp3.tag2.add_picture(@speaker.image, mime: 'jpeg', pic_type: 3)
