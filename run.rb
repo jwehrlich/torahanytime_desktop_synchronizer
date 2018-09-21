@@ -4,6 +4,7 @@ require 'net/http'
 require 'json'
 require 'mp3info'
 require 'fileutils'
+require 'date'
 
 # Base class for connecting to internet
 class Connectable
@@ -129,9 +130,11 @@ class Lecture < Connectable
     puts 'Updating MP3 metadata'
     Mp3Info.open(file_path) do |mp3|
       time = "#{date_as_parts[2]}-#{date_as_parts[0]}-#{date_as_parts[1]}"
+      year = date_as_parts[2]
+      month = ::Date::MONTHNAMES[date_as_parts[0].to_i]
       mp3.tag.title = "(#{time}) #{@name}"
       mp3.tag.artist = @speaker.name
-      mp3.tag.album = "TorahAnytime.com - #{@speaker.name}"
+      mp3.tag.album = "TorahAnytime.com - #{@speaker.name} - #{month} #{year}"
       mp3.tag.year = @date.split('/')[2]
       mp3.tag.comments = "Lecture was given on: #{@date}"
       mp3.tag2.add_picture(@speaker.image, mime: 'jpeg', pic_type: 3)

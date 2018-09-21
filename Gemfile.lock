@@ -1,0 +1,15 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    mp3info (0.8.5)
+      ruby-mp3info (>= 0.8.5)
+    ruby-mp3info (0.8.10)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  mp3info
+
+BUNDLED WITH
+   1.16.3
