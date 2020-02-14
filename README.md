@@ -10,6 +10,10 @@ Allows for you to be able to synchronize lectures from speakers that you follow 
 In order to ensure that you can run this properly you will need to ensure that you have:
 
 * Ruby 2.0.0 or greater
+* Requires SOX
+  ```sh
+  $ brew install sox
+  ```
 
 ### Installation
 
