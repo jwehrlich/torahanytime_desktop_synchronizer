@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+require 'securerandom'
 require 'optparse'
 require 'net/http'
 require 'json'
@@ -32,7 +33,7 @@ end
 class Speaker < Connectable
   attr_reader :id, :name, :image, :lectures
   DEFAULT_OFFSET = 0
-  DEFAULT_LIMIT = 100
+  DEFAULT_LIMIT = 20
 
   def initialize(payload)
     @id = payload['speaker_id']
@@ -86,7 +87,9 @@ class Lecture < Connectable
     else
       puts "Downloading: #{file_name}..."
       url = download_url(user_id)
-      download_file(url, file_path)
+      tmp_path = "/tmp/#{SecureRandom.uuid}.mp3"
+      download_file(url, tmp_path)
+      drc_filter(tmp_path, file_path)
       process_mp3_metadata(file_path)
     end
   end
@@ -126,6 +129,18 @@ class Lecture < Connectable
     post_request(url, params)['link']
   end
 
+  # run mp3 through Dynamic Range Compression
+  # http://sox.sourceforge.net/sox.html
+  def drc_filter(input_path, output_path)
+    puts "Dymamic Range Filtering of mp3..."
+    command = "sox #{input_path} #{output_path} compand .01,.5 .1:-45.1,-45,-0 -5 -90 .1 1>/dev/null"
+    system(command, :err => File::NULL)
+    if $? != 0
+      puts 'failed to process mp3'
+    end
+    File.delete(input_path) if File.exist?(input_path)
+  end
+
   def process_mp3_metadata(file_path)
     puts 'Updating MP3 metadata'
     Mp3Info.open(file_path) do |mp3|
@@ -134,7 +149,7 @@ class Lecture < Connectable
       month = ::Date::MONTHNAMES[date_as_parts[0].to_i]
       mp3.tag.title = "(#{time}) #{@name}"
       mp3.tag.artist = @speaker.name
-      mp3.tag.album = "TorahAnytime.com - #{@speaker.name} - #{month} #{year}"
+      mp3.tag.album = "#{year} #{month} - #{@speaker.name} - TorahAnytime.com"
       mp3.tag.year = @date.split('/')[2]
       mp3.tag.comments = "Lecture was given on: #{@date}"
       mp3.tag2.add_picture(@speaker.image, mime: 'jpeg', pic_type: 3)
