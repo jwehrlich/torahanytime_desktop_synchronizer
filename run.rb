@@ -87,7 +87,7 @@ class Lecture < Connectable
     else
       puts "Downloading: #{file_name}..."
       url = download_url(user_id)
-      tmp_path = "/tmp/#{SecureRandom.uuid}.mp3"
+      tmp_path = "./tmp/#{SecureRandom.uuid}.mp3"
       download_file(url, tmp_path)
       drc_filter(tmp_path, file_path)
       process_mp3_metadata(file_path)
@@ -132,8 +132,11 @@ class Lecture < Connectable
   # run mp3 through Dynamic Range Compression
   # http://sox.sourceforge.net/sox.html
   def drc_filter(input_path, output_path)
+    FileUtils.mkdir_p File.dirname(output_path)
+
     puts "Dymamic Range Filtering of mp3..."
     command = "sox #{input_path} #{output_path} compand .01,.5 .1:-45.1,-45,-0 -5 -90 .1 1>/dev/null"
+
     system(command, :err => File::NULL)
     if $? != 0
       puts 'failed to process mp3'
@@ -202,7 +205,8 @@ EOHELP
 end
 
 if File.expand_path($PROGRAM_NAME) == File.expand_path(__FILE__)
-  options = {}
+  options = {'user_id' => ENV["USER_ID"]}
+
   parser = OptionParser.new do |opts|
     opts.on('-p', '--path path') do |path|
       options['path'] = path

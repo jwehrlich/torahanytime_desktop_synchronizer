@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  ruby:
+    build:
+      context: .
+    env_file:
+      - .env
+    volumes:
+      - ./:/ruby-app
+      - ./lectures:/ruby-app/lectures:delegated
+    command: ./run.rb
+    # command: tail -F /dev/null
+    stdin_open: true
+    tty: true

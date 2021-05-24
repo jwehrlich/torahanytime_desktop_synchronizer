@@ -1,3 +1,4 @@
 lectures/
 tmp/
 .DS_Store
+.env
